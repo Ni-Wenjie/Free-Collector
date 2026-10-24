@@ -1,0 +1,65 @@
+# 自由采集器后端核心配置
+# 安全约束：server.address 固定 127.0.0.1，仅允许本机访问
+
+server:
+  port: 17893                # 本地后端固定端口，Tauri Rust桥转发目标
+  address: 127.0.0.1         # 强制只绑定回环地址
+
+spring:
+  application:
+    name: free-collector-server
+
+  # MySQL8 数据源（首次使用前请执行 db/schema.sql 建库建表）
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # characterEncoding 必须是 Java 合法字符集名；Connector/J 8 会自动映射为 utf8mb4
+    url: jdbc:mysql://127.0.0.1:3306/free_collector?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: Object_user    # 本机MySQL账号
+    password: Object01       # 本机MySQL密码
+    hikari:
+      maximum-pool-size: 8   # 单机本地程序，小连接池即可
+      minimum-idle: 2
+
+  # Redis：用于任务队列/任务状态/限流计数
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      #timeout: 3000ms
+
+# MyBatis-Plus
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true   # 数据库下划线字段 ↔ 实体驼峰属性自动映射
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl  # SQL日志默认关闭
+  global-config:
+    banner: false
+    db-config:
+      logic-delete-field: deleted        # 全局逻辑删除字段
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+# 自由采集器业务参数
+free-collector:
+  crawler:
+    headless: true                # 无头模式：true不显示浏览器窗口，适合后台采集
+    auto-install-browser: true    # 首次运行自动下载内置Chromium（约120MB，仅一次）
+    install-timeout-ms: 600000    # 浏览器安装超时（10分钟）
+    max-items-per-field: 500      # 单页单字段最大提取条数，防止异常页面撑爆内存
+  captcha:
+    pool-size: 2                  # 打码请求独立线程池大小（与爬虫主任务隔离）
+    queue-capacity: 20            # 打码异步队列容量，满则快速失败不阻塞主任务
+  task:
+    worker-threads: 2             # 本地任务工作线程数（= 同时运行的浏览器会话数）
+    pop-timeout-seconds: 1        # Redis 队列阻塞出队超时秒数
+    default-max-pages: 5          # 任务未单独配置时的默认最大翻页数
+    page-switch-wait-ms: 800      # 翻页后等待页面刷新的毫秒数
+
+# 日志分级
+# 普通用户业务日志：info；开发者调试日志：默认OFF，排障时改为debug
+# 打码调用日志：独立文件 logs/captcha/captcha.log（见 logback-spring.xml）
+logging:
+  level:
+    root: info
+    com.freecollector: info
+    com.freecollector.debug: off

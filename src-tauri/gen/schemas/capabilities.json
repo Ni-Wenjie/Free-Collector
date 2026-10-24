@@ -1,0 +1,1 @@
+{"default":{"identifier":"default","description":"默认窗口能力集（最小权限）","local":true,"windows":["main"],"permissions":["core:default"]}}

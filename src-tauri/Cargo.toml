@@ -1,0 +1,21 @@
+[package]
+name = "free-collector"
+version = "0.1.0"
+description = "自由采集器（内部技术测试版）Tauri 外壳"
+edition = "2021"
+
+# Tauri 2 标准布局：业务在 lib.rs，main.rs 仅做入口
+[lib]
+name = "free_collector_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# reqwest 仅用于向本机 127.0.0.1 SpringBoot 后端转发请求；
+# 使用 rustls 避免 Windows 下编译 OpenSSL 的额外依赖
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
